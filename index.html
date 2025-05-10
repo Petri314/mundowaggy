@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamiento de Citas - MundoWaggy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+        }
+        .service-button {
+            transition: all 0.3s ease;
+        }
+        .service-button.selected {
+            background-color: #22c55e; /* Green-500 */
+            color: white;
+            border-color: #16a34a; /* Green-600 */
+        }
+        .form-input {
+            border-radius: 0.375rem; /* rounded-md */
+            border: 1px solid #d1d5db; /* gray-300 */
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            width: 100%;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-input:focus {
+            border-color: #22c55e; /* Green-500 */
+            box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.25);
+            outline: none;
+        }
+        .error-message {
+            color: #ef4444; /* red-500 */
+            font-size: 0.875rem; /* text-sm */
+        }
+        .submit-button {
+            background-color: #22c55e; /* Green-500 */
+            color: white;
+            font-weight: 600; /* semibold */
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.375rem; /* rounded-md */
+            transition: background-color 0.3s ease;
+        }
+        .submit-button:hover {
+            background-color: #16a34a; /* Green-600 */
+        }
+        /* Custom message box for alerts */
+        #messageBox {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #10B981; /* emerald-500 */
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+            font-size: 1rem;
+        }
+        #messageBox.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        #messageBox.error {
+            background-color: #EF4444; /* red-500 */
+        }
+        .logo-container img {
+            max-width: 150px; /* Adjust size as needed */
+            height: auto;
+            border-radius: 50%; /* Makes it circular if the image is square */
+            margin-bottom: 0.5rem; /* space below logo */
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <div id="messageBox"></div>
+
+    <div class="bg-white p-6 sm:p-8 md:p-10 rounded-xl shadow-2xl w-full max-w-2xl">
+        <header class="text-center mb-8">
+            <div class="logo-container flex justify-center">
+                <img src="https://placehold.co/150x150/EBF8F1/16A34A?text=MundoWaggy" alt="Logo MundoWaggy" 
+                     onerror="this.onerror=null; this.src='https://placehold.co/150x150/EBF8F1/16A34A?text=Logo%20No%20Disponible';">
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-green-600">
+                MundoWaggy
+            </h1>
+            <p class="text-gray-600 mt-2 text-lg">Agenda fácilmente el mejor cuidado para tu perrito.</p>
+        </header>
+
+        <form id="appointmentForm">
+            <div class="mb-6">
+                <label class="block text-lg font-semibold text-gray-700 mb-2">1. Elige el Servicio:</label>
+                <div id="serviceContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button type="button" data-service="Guardería Canina" class="service-button border-2 border-gray-300 p-4 rounded-lg text-gray-700 hover:border-green-500 hover:text-green-600 focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <span role="img" aria-label="dog house" class="text-2xl block mb-1">🏠</span>
+                        Guardería Canina
+                    </button>
+                    <button type="button" data-service="Paseo de Perros" class="service-button border-2 border-gray-300 p-4 rounded-lg text-gray-700 hover:border-green-500 hover:text-green-600 focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <span role="img" aria-label="dog leash" class="text-2xl block mb-1">🚶‍♂️🐕</span>
+                        Paseo de Perros
+                    </button>
+                    <button type="button" data-service="Airbnb Canino" class="service-button border-2 border-gray-300 p-4 rounded-lg text-gray-700 hover:border-green-500 hover:text-green-600 focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <span role="img" aria-label="bed" class="text-2xl block mb-1">🛏️</span>
+                        Airbnb Canino
+                    </button>
+                </div>
+                <input type="hidden" id="selectedService" name="selectedService" required>
+                <p id="serviceError" class="error-message mt-1"></p>
+            </div>
+
+            <div class="mb-6">
+                <label for="location" class="block text-lg font-semibold text-gray-700 mb-2">2. Selecciona la Comuna:</label>
+                <select id="location" name="location" class="form-input" required>
+                    <option value="">-- Elige una comuna --</option>
+                    <option value="Santiago Centro">Santiago Centro</option>
+                    <option value="Ñuñoa">Ñuñoa</option>
+                </select>
+                <p id="locationError" class="error-message mt-1"></p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label for="date" class="block text-lg font-semibold text-gray-700 mb-2">3. Fecha:</label>
+                    <input type="date" id="date" name="date" class="form-input" required>
+                    <p id="dateError" class="error-message mt-1"></p>
+                </div>
+                <div>
+                    <label for="time" class="block text-lg font-semibold text-gray-700 mb-2">4. Hora:</label>
+                    <input type="time" id="time" name="time" class="form-input" required>
+                    <p id="timeError" class="error-message mt-1"></p>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label for="petName" class="block text-lg font-semibold text-gray-700 mb-2">5. Nombre de tu Perrito:</label>
+                <input type="text" id="petName" name="petName" placeholder="Ej: Rocky" class="form-input" required>
+                <p id="petNameError" class="error-message mt-1"></p>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">6. Tus Datos de Contacto:</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="ownerName" class="block text-sm font-medium text-gray-700">Tu Nombre:</label>
+                        <input type="text" id="ownerName" name="ownerName" placeholder="Ej: Juan Pérez" class="form-input mt-1" required>
+                        <p id="ownerNameError" class="error-message mt-1"></p>
+                    </div>
+                    <div>
+                        <label for="ownerPhone" class="block text-sm font-medium text-gray-700">Tu Teléfono:</label>
+                        <input type="tel" id="ownerPhone" name="ownerPhone" placeholder="Ej: +56912345678" class="form-input mt-1" required>
+                        <p id="ownerPhoneError" class="error-message mt-1"></p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label for="ownerEmail" class="block text-sm font-medium text-gray-700">Tu Email:</label>
+                    <input type="email" id="ownerEmail" name="ownerEmail" placeholder="Ej: juan.perez@example.com" class="form-input mt-1" required>
+                    <p id="ownerEmailError" class="error-message mt-1"></p>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label for="notes" class="block text-lg font-semibold text-gray-700 mb-2">7. Notas Adicionales:</label>
+                <textarea id="notes" name="notes" rows="3" placeholder="¿Algo más que debamos saber? (Ej: alergias, comportamiento, duración específica para paseos/airbnb, etc.)" class="form-input"></textarea>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="submit-button w-full sm:w-auto">
+                    Solicitar Agendamiento
+                </button>
+            </div>
+        </form>
+
+        <div id="confirmationMessage" class="hidden mt-8 p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+            <h3 class="text-2xl font-semibold text-green-700">¡Solicitud Enviada! 🎉</h3>
+            <p class="text-gray-700 mt-2">Gracias <span id="confirmedOwnerName"></span>, hemos recibido tu solicitud de agendamiento para <strong id="confirmedPetName"></strong> para el servicio de <strong id="confirmedService"></strong> en <strong id="confirmedLocation"></strong> el <strong id="confirmedDate"></strong> a las <strong id="confirmedTime"></strong>.</p>
+            <p class="text-gray-600 mt-3">Nos pondremos en contacto contigo a la brevedad para confirmar todos los detalles y finalizar la reserva.</p>
+            <p class="text-gray-600 mt-4">¡En MundoWaggy estamos ansiosos por conocer a tu perrito!</p>
+        </div>
+
+        <footer class="mt-10 text-center">
+            <p class="text-gray-600">Síguenos en Instagram:
+                <a href="https://www.instagram.com/mundowaggy" target="_blank" rel="noopener noreferrer" class="text-green-600 hover:text-green-700 font-semibold underline">
+                    @mundowaggy
+                </a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('appointmentForm');
+            const serviceContainer = document.getElementById('serviceContainer');
+            const selectedServiceInput = document.getElementById('selectedService');
+            const serviceButtons = serviceContainer.querySelectorAll('.service-button');
+            
+            const confirmationMessageDiv = document.getElementById('confirmationMessage');
+            const messageBox = document.getElementById('messageBox');
+
+            // Set min date for date input to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').setAttribute('min', today);
+
+            // Handle service selection
+            serviceButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    serviceButtons.forEach(btn => btn.classList.remove('selected'));
+                    button.classList.add('selected');
+                    selectedServiceInput.value = button.getAttribute('data-service');
+                    clearError('serviceError'); // Clear service error when a service is selected
+                    serviceContainer.classList.remove('border-2', 'border-red-500'); // Remove error border
+                });
+            });
+
+            function showCustomAlert(message, type = 'success', duration = 4000) {
+                messageBox.textContent = message;
+                messageBox.className = ''; // Clear previous classes
+                messageBox.classList.add('show');
+                if (type === 'error') {
+                    messageBox.classList.add('error');
+                }
+                setTimeout(() => {
+                    messageBox.classList.remove('show');
+                }, duration);
+            }
+            
+            // Clear error messages and border for a specific field
+            function clearError(elementId) {
+                const errorElement = document.getElementById(elementId);
+                if (errorElement) {
+                    errorElement.textContent = '';
+                }
+                // Attempt to find the associated input field to remove its error border
+                const inputFieldId = elementId.replace('Error', ''); // e.g., 'serviceError' -> 'service'
+                const inputField = document.getElementById(inputFieldId);
+                if (inputField) {
+                    inputField.classList.remove('border-red-500');
+                }
+                 // Special handling for service container
+                if (elementId === 'serviceError') {
+                    serviceContainer.classList.remove('border-2', 'border-red-500');
+                }
+            }
+
+            // Validate individual field
+            function validateField(fieldId, errorId, errorMessage) {
+                const field = document.getElementById(fieldId);
+                const errorElement = document.getElementById(errorId);
+                if (!field.value || (field.type === 'select-one' && field.value === "")) {
+                    errorElement.textContent = errorMessage;
+                    field.classList.add('border-red-500'); // Highlight error field
+                    return false;
+                }
+                errorElement.textContent = '';
+                field.classList.remove('border-red-500');
+                return true;
+            }
+
+
+            form.addEventListener('submit', function (event) {
+                event.preventDefault(); // Prevent actual form submission
+
+                let isValid = true;
+
+                // Clear all previous errors from messages
+                document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+                // Clear all previous error borders from inputs
+                document.querySelectorAll('.form-input').forEach(el => el.classList.remove('border-red-500'));
+                 // Clear error border from service container specifically
+                serviceContainer.classList.remove('border-2', 'border-red-500', 'rounded-lg');
+
+
+                // Validate service
+                if (!selectedServiceInput.value) {
+                    document.getElementById('serviceError').textContent = 'Por favor, elige un servicio.';
+                    // Add a red border around the service container for visual feedback
+                    serviceContainer.classList.add('border-2', 'border-red-500', 'rounded-lg'); // Added rounded-lg for consistency
+                    isValid = false;
+                } else {
+                     serviceContainer.classList.remove('border-2', 'border-red-500');
+                }
+
+                // Validate other fields
+                isValid = validateField('location', 'locationError', 'Por favor, selecciona una comuna.') && isValid;
+                isValid = validateField('date', 'dateError', 'Por favor, elige una fecha.') && isValid;
+                isValid = validateField('time', 'timeError', 'Por favor, elige una hora.') && isValid;
+                isValid = validateField('petName', 'petNameError', 'Por favor, ingresa el nombre de tu perrito.') && isValid;
+                isValid = validateField('ownerName', 'ownerNameError', 'Por favor, ingresa tu nombre.') && isValid;
+                isValid = validateField('ownerPhone', 'ownerPhoneError', 'Por favor, ingresa tu teléfono.') && isValid;
+                
+                const emailField = document.getElementById('ownerEmail');
+                const emailError = document.getElementById('ownerEmailError');
+                if (!emailField.value) {
+                    emailError.textContent = 'Por favor, ingresa tu email.';
+                    emailField.classList.add('border-red-500');
+                    isValid = false;
+                } else if (!/^\S+@\S+\.\S+$/.test(emailField.value)) { // Basic email validation
+                    emailError.textContent = 'Por favor, ingresa un email válido.';
+                    emailField.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    emailError.textContent = ''; // Clear error message
+                    emailField.classList.remove('border-red-500'); // Remove error border
+                }
+
+
+                if (isValid) {
+                    // --- Form is valid, process data (simulation) ---
+                    const formData = new FormData(form);
+                    const data = Object.fromEntries(formData.entries());
+                    data.selectedService = selectedServiceInput.value; // Ensure service is included
+
+                    console.log('Datos del formulario:', data); // For debugging, viewable in browser console
+
+                    // Display confirmation message
+                    document.getElementById('confirmedOwnerName').textContent = data.ownerName;
+                    document.getElementById('confirmedPetName').textContent = data.petName;
+                    document.getElementById('confirmedService').textContent = data.selectedService;
+                    document.getElementById('confirmedLocation').textContent = data.location;
+                    
+                    // Format date for display (e.g., "martes, 10 de mayo de 2025")
+                    const dateObj = new Date(data.date + 'T00:00:00'); // Add time to avoid timezone issues with date-only strings
+                    const formattedDate = dateObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    document.getElementById('confirmedDate').textContent = formattedDate;
+                    
+                    document.getElementById('confirmedTime').textContent = data.time;
+
+                    form.classList.add('hidden'); // Hide the form
+                    confirmationMessageDiv.classList.remove('hidden'); // Show confirmation
+                    confirmationMessageDiv.scrollIntoView({ behavior: 'smooth' });
+
+                    showCustomAlert('¡Solicitud de agendamiento enviada con éxito!', 'success');
+
+                    // Optional: To reset the form and allow another submission after a delay:
+                    // setTimeout(() => {
+                    //     form.reset();
+                    //     serviceButtons.forEach(btn => btn.classList.remove('selected'));
+                    //     selectedServiceInput.value = '';
+                    //     document.querySelectorAll('.form-input').forEach(el => el.classList.remove('border-red-500'));
+                    //     serviceContainer.classList.remove('border-2', 'border-red-500', 'rounded-lg');
+                    //     confirmationMessageDiv.classList.add('hidden');
+                    //     form.classList.remove('hidden');
+                    //     window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+                    // }, 10000); // Reset after 10 seconds
+
+                } else {
+                    showCustomAlert('Por favor, corrige los errores en el formulario.', 'error');
+                    // Find the first field with an error and scroll to it
+                    const firstErrorField = form.querySelector('.border-red-500, .service-button.border-red-500'); // Check inputs first
+                    const firstErrorMessage = form.querySelector('.error-message:not(:empty)');
+
+
+                    if (document.getElementById('serviceError').textContent) {
+                         serviceContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else if (firstErrorField) {
+                        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else if (firstErrorMessage) {
+                        firstErrorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+
+            // Add event listeners to clear errors on input/change for each field
+            ['location', 'date', 'time', 'petName', 'ownerName', 'ownerPhone', 'ownerEmail'].forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    // Use 'input' for text, email, tel, date, time. Use 'change' for select.
+                    const eventType = field.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+                    field.addEventListener(eventType, () => {
+                        // Validate on input to remove error message and border if valid
+                        if (field.checkValidity()) { // Use built-in checkValidity or your custom logic
+                             clearError(id + 'Error');
+                             field.classList.remove('border-red-500');
+                        }
+                        // If you want to clear error immediately on any input, not just valid input:
+                        // clearError(id + 'Error');
+                        // field.classList.remove('border-red-500');
+                    });
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
